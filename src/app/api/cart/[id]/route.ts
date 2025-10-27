@@ -67,11 +67,10 @@ export async function DELETE(
     const token = authHeader.substring(7)
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any
 
-    // Arquivar item ao invés de deletar
+    // Deletar item do carrinho
     await executeQuery(
-      `UPDATE cart 
-       SET status = 'archived', archived_at = NOW() 
-       WHERE id = ? AND customer_id = ? AND status = 'active'`,
+      `DELETE FROM cart_items 
+       WHERE id = ? AND userId = ?`,
       [id, decoded.userId]
     )
 

@@ -13,6 +13,7 @@ import SEO from '@/components/SEO'
 import { useCart } from '@/contexts/CartContext'
 import { usePublicAccess } from '@/hooks/usePublicAccess'
 import { Lock } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface Product {
   id: string
@@ -336,25 +337,28 @@ export default function CatalogPage() {
               
               {/* Seletor de Ordenação */}
               <div className="flex items-center space-x-2">
-                <label htmlFor="sort" className="text-sm text-gray-600">Ordenar por:</label>
-                <select
-                  id="sort"
+                <label className="text-sm text-gray-600">Ordenar por:</label>
+                <Select
                   value={`${currentSortBy}-${currentSortOrder}`}
-                  onChange={(e) => {
-                    const [sortBy, sortOrder] = e.target.value.split('-')
+                  onValueChange={(value) => {
+                    const [sortBy, sortOrder] = value.split('-')
                     handleSortChange(sortBy, sortOrder)
                   }}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary focus:border-primary"
                 >
-                  <option value="createdAt-DESC">Mais recentes</option>
-                  <option value="createdAt-ASC">Mais antigos</option>
-                  <option value="name-ASC">Nome A-Z</option>
-                  <option value="name-DESC">Nome Z-A</option>
-                  <option value="price-ASC">Menor preço</option>
-                  <option value="price-DESC">Maior preço</option>
-                  <option value="wholesalePrice-ASC">Menor preço atacado</option>
-                  <option value="wholesalePrice-DESC">Maior preço atacado</option>
-                </select>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Ordenar por..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="createdAt-DESC">Mais recentes</SelectItem>
+                    <SelectItem value="createdAt-ASC">Mais antigos</SelectItem>
+                    <SelectItem value="name-ASC">Nome A-Z</SelectItem>
+                    <SelectItem value="name-DESC">Nome Z-A</SelectItem>
+                    <SelectItem value="price-ASC">Menor preço</SelectItem>
+                    <SelectItem value="price-DESC">Maior preço</SelectItem>
+                    <SelectItem value="wholesalePrice-ASC">Menor preço atacado</SelectItem>
+                    <SelectItem value="wholesalePrice-DESC">Maior preço atacado</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
