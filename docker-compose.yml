@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  b2b-tropical:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: b2b-tropical
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./public/uploads:/app/public/uploads
+    networks:
+      - b2b-network
+
+networks:
+  b2b-network:
+    driver: bridge
