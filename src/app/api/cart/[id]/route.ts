@@ -57,6 +57,8 @@ export async function DELETE(
     const { id } = await params
     const authHeader = request.headers.get('authorization')
     
+    console.log('🗑️ DELETE - Item ID:', id)
+    
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'Token não fornecido' },
@@ -67,26 +69,47 @@ export async function DELETE(
     const token = authHeader.substring(7)
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any
 
+    console.log('👤 Usuário ID:', decoded.userId)
+    console.log('👤 Role:', decoded.role)
+
     // Verificar se o item existe e pertence ao usuário
     const existingItem = await executeQuery(
-      `SELECT id FROM cart WHERE id = ? AND customer_id = ? AND status = 'active'`,
-      [id, decoded.userId]
+      `SELECT * FROM cart WHERE id = ? AND status = 'active'`,
+      [id]
     )
 
+    console.log('🔍 Item encontrado:', existingItem)
+
     if (!Array.isArray(existingItem) || existingItem.length === 0) {
+      console.log('❌ Item não encontrado ou já arquivado')
       return NextResponse.json(
         { error: 'Item não encontrado' },
         { status: 404 }
       )
     }
 
+    console.log('🔍 customer_id do item:', existingItem[0].customer_id)
+    console.log('🔍 userId do token:', decoded.userId)
+    console.log('✅ IDs coincidem?', String(existingItem[0].customer_id) === String(decoded.userId))
+
+    // Verificar se o item pertence ao usuário
+    if (String(existingItem[0].customer_id) !== String(decoded.userId)) {
+      console.log('❌ Item não pertence ao usuário')
+      return NextResponse.json(
+        { error: 'Item não pertence ao usuário' },
+        { status: 403 }
+      )
+    }
+
     // Arquivar item do carrinho ao invés de deletar
-    await executeQuery(
+    const result = await executeQuery(
       `UPDATE cart 
        SET status = 'archived', archived_at = NOW() 
        WHERE id = ? AND customer_id = ? AND status = 'active'`,
       [id, decoded.userId]
     )
+
+    console.log('✅ Item arquivado com sucesso:', result)
 
     return NextResponse.json({ message: 'Item removido do carrinho' })
 
