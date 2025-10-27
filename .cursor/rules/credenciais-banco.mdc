@@ -1,0 +1,106 @@
+# 🔐 Credenciais do Banco de Dados - B2B Tropical
+
+## Informações de Conexão
+
+Sempre que trabalhar com o banco de dados ou criar scripts que precisem acessar o MySQL, use estas credenciais:
+
+### **Credenciais de Produção**
+```
+DATABASE_URL=mysql://b2btropical:facbe3b2f9dfa94ddb49@server.idenegociosdigitais.com.br:3394/b2btropical
+```
+
+### **Detalhes da Conexão**
+- **Host**: `server.idenegociosdigitais.com.br`
+- **Port**: `3394`
+- **User**: `b2btropical`
+- **Password**: `facbe3b2f9dfa94ddb49`
+- **Database**: `b2btropical`
+
+---
+
+## 📝 Uso em Scripts Node.js
+
+Quando criar scripts de migração ou utilitários que precisem conectar ao banco:
+
+```javascript
+const mysql = require('mysql2/promise');
+
+async function conectar() {
+  const connection = await mysql.createConnection({
+    host: 'server.idenegociosdigitais.com.br',
+    port: 3394,
+    user: 'b2btropical',
+    password: 'facbe3b2f9dfa94ddb49',
+    database: 'b2btropical'
+  });
+  
+  return connection;
+}
+```
+
+---
+
+## 🔧 Uso no Prisma
+
+O arquivo `.env` ou `.env.local` deve conter:
+
+```env
+DATABASE_URL="mysql://b2btropical:facbe3b2f9dfa94ddb49@server.idenegociosdigitais.com.br:3394/b2btropical"
+```
+
+---
+
+## ⚠️ Regras Importantes
+
+1. **Sempre usar essas credenciais** quando o usuário solicitar operações no banco
+2. **Nunca perguntar** as credenciais novamente
+3. **Lembrar automaticamente** ao criar scripts de migração
+4. **Validar conexão** antes de executar comandos críticos
+5. **Usar transações** para operações que modificam múltiplas tabelas
+
+---
+
+## 🚀 Exemplo Completo de Script
+
+```javascript
+const mysql = require('mysql2/promise');
+
+async function executarMigracao() {
+  let connection;
+  
+  try {
+    console.log('📡 Conectando ao banco...');
+    
+    connection = await mysql.createConnection({
+      host: 'server.idenegociosdigitais.com.br',
+      port: 3394,
+      user: 'b2btropical',
+      password: 'facbe3b2f9dfa94ddb49',
+      database: 'b2btropical'
+    });
+    
+    console.log('✅ Conectado!');
+    
+    // Executar SQL
+    await connection.execute(`
+      -- Seu SQL aqui
+    `);
+    
+    console.log('✅ Migração concluída!');
+    
+  } catch (error) {
+    console.error('❌ Erro:', error.message);
+    throw error;
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+executarMigracao();
+```
+
+---
+
+**🔒 Segurança**: Estas credenciais são do ambiente de produção. Tratar com cuidado e nunca commitar no git.

@@ -1,0 +1,450 @@
+# 📊 Padrão de Tabelas - B2B Tropical
+
+## 🎯 **Referência**
+Página: `http://localhost:3000/admin/orders`  
+Arquivos principais:
+- `src/app/admin/orders/page.tsx`
+- `src/components/admin/orders/OrdersDataTable.tsx`
+- `src/components/admin/orders/OrderStatsCards.tsx`
+- `src/components/admin/orders/OrdersFilters.tsx`
+
+---
+
+## 🎨 **1. Cards Estatísticos**
+
+### **Layout**
+```tsx
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+```
+
+### **Estrutura do Card**
+```tsx
+<Card className="bg-black border-gray-800">
+  <CardContent className="p-2 pl-4">
+    <div className="flex items-center gap-3">
+      <IconComponent className="h-6 w-6 text-primary" />
+      <div className="flex-1">
+        <p className="text-sm font-bold text-white">{valor}</p>
+        <p className="text-xs text-gray-400">{label}</p>
+      </div>
+    </div>
+  </CardContent>
+</Card>
+```
+
+### **Regras**
+- ✅ Fundo preto: `bg-black`
+- ✅ Borda cinza: `border-gray-800`
+- ✅ Ícones laranjas: `text-primary` com tamanho `h-6 w-6`
+- ✅ Ícones sem fundo (sem container com bg)
+- ✅ Padding diferenciado: `p-2 pl-4` (mais espaço à esquerda)
+- ✅ Gap entre ícone e texto: `gap-3`
+- ✅ Valor em branco bold: `text-white font-bold text-sm`
+- ✅ Label em cinza: `text-gray-400 text-xs`
+- ❌ **NÃO** usar hover effects
+- ❌ **NÃO** usar gradientes
+- ❌ **NÃO** usar fundo colorido nos ícones
+
+---
+
+## 📋 **2. Header da Tabela**
+
+### **TableRow (Header)**
+```tsx
+<TableRow className="bg-black hover:bg-black border-b border-gray-800">
+```
+
+### **TableHead**
+```tsx
+<TableHead className="text-white font-bold text-xs tracking-wider h-12 px-4 text-center uppercase">
+  {conteúdo}
+</TableHead>
+```
+
+### **Regras**
+- ✅ Fundo preto: `bg-black`
+- ✅ Texto branco: `text-white`
+- ✅ Texto em uppercase: `uppercase` (exceto coluna "Ações")
+- ✅ Todos os títulos centralizados: `text-center`
+- ✅ Fonte bold: `font-bold`
+- ✅ Tamanho pequeno: `text-xs`
+- ✅ Altura fixa: `h-12`
+- ✅ Borda inferior: `border-b border-gray-800`
+- ⚠️ Coluna "Ações": SEM uppercase (manter "Ações", não "AÇÕES")
+
+### **Botões de Ordenação**
+```tsx
+<Button
+  variant="ghost"
+  className="text-white hover:text-white hover:bg-gray-900"
+  onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+>
+  {título}
+  <ArrowUpDown className="ml-2 h-4 w-4" />
+</Button>
+```
+
+### **Regras dos Botões**
+- ✅ Texto branco: `text-white`
+- ✅ Hover com fundo cinza escuro: `hover:bg-gray-900`
+- ✅ Manter texto branco no hover: `hover:text-white`
+- ❌ **NÃO** usar cores laranjas nos botões de ordenação
+
+---
+
+## 🔍 **3. Filtros e Busca**
+
+### **Container de Filtros**
+```tsx
+<div className="flex flex-col lg:flex-row gap-4 items-end">
+```
+
+### **Botão de Buscar**
+```tsx
+<Button
+  onClick={handleSearch}
+  size="sm"
+  className="px-3 bg-black hover:bg-gray-900 text-white"
+>
+  <Search className="h-4 w-4" />
+</Button>
+```
+
+### **Regras**
+- ✅ Fundo preto: `bg-black`
+- ✅ Texto branco: `text-white`
+- ✅ Hover cinza escuro: `hover:bg-gray-900`
+- ✅ Ícone branco
+
+---
+
+## 📄 **4. Container Principal**
+
+### **Estrutura**
+```tsx
+<main className="container mx-auto px-2.5 py-2.5">
+  {/* Header da Página */}
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+    <h1 className="text-3xl font-bold text-gray-900">
+      Título <span className="text-sm font-normal text-gray-600">- Descrição</span>
+    </h1>
+  </div>
+  
+  {/* Cards Estatísticos */}
+  <OrderStatsCards stats={stats} loading={loading} />
+  
+  {/* Filtros */}
+  <OrdersFilters filters={filters} onFiltersChange={setFilters} />
+  
+  {/* Tabela */}
+  <OrdersDataTable orders={orders} ... />
+</main>
+```
+
+### **Regras de Espaçamento**
+- ✅ Container padding: `px-2.5 py-2.5` (reduzido, não `px-4 py-6`)
+- ✅ Margin bottom do header: `mb-4` (não `mb-6` ou `mb-8`)
+- ✅ Margin bottom dos cards: `mb-4` (não `mb-8`)
+- ✅ Gap nos grids: `gap-4` (uniforme)
+
+---
+
+## 🎨 **5. Paleta de Cores**
+
+### **Cores Principais**
+```css
+/* Fundos */
+--bg-black: black
+--bg-gray-900: #111827 (hover)
+--bg-gray-800: #1f2937 (bordas)
+
+/* Textos */
+--text-white: white
+--text-gray-400: #9ca3af (secundário)
+--text-gray-600: #4b5563 (descrições)
+--text-gray-900: #111827 (títulos)
+
+/* Destaque */
+--primary: #f97316 (laranja - apenas ícones e destaques)
+```
+
+### **Regras de Uso**
+- ✅ Preto para fundos de cards e headers: `bg-black`
+- ✅ Branco para textos principais: `text-white`
+- ✅ Laranja APENAS para ícones e elementos de destaque: `text-primary`
+- ❌ **NÃO** usar laranja em fundos ou textos de header
+- ❌ **NÃO** usar gradientes
+- ❌ **NÃO** usar cores variadas (azul, verde, vermelho) para cards estatísticos
+
+---
+
+## 📏 **6. Cards (Componente UI Base)**
+
+### **Padding Vertical**
+```tsx
+// src/components/ui/card.tsx
+<div className="... py-3 ...">  // NÃO py-6
+```
+
+### **Regra**
+- ✅ Altura dos cards reduzida em 50%
+- ✅ Usar `py-3` em vez de `py-6`
+
+---
+
+## 🗑️ **7. Confirmações de Exclusão**
+
+### **Usar Dialog, NÃO Alert**
+
+❌ **ERRADO** - Não usar `window.confirm()` ou `alert()`
+```tsx
+const handleDelete = () => {
+  if (confirm('Tem certeza?')) {
+    // deletar
+  }
+}
+```
+
+✅ **CORRETO** - Usar componente Dialog do shadcn/ui
+```tsx
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+
+// No componente
+<AlertDialog>
+  <AlertDialogTrigger asChild>
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600 transition-colors"
+      title="Deletar"
+    >
+      <Trash2 className="h-4 w-4" />
+    </Button>
+  </AlertDialogTrigger>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+      <AlertDialogDescription>
+        Tem certeza que deseja excluir este item? 
+        Esta ação não pode ser desfeita.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+      <AlertDialogAction
+        onClick={() => handleDelete(item.id)}
+        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      >
+        Excluir
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
+
+### **Regras**
+- ✅ Sempre usar AlertDialog do shadcn/ui
+- ✅ Botão cancelar em cinza claro
+- ✅ Botão confirmar em vermelho (destructive)
+- ✅ Mensagem clara e objetiva
+- ❌ **NUNCA** usar `window.confirm()`
+- ❌ **NUNCA** usar `window.alert()`
+
+### **Componente ErrorAlert**
+
+❌ **ERRADO** - Não usar toast flutuante ou alert
+```tsx
+// Toast flutuante
+<div className="fixed bottom-4 right-4 bg-red-500...">
+  <p>{error}</p>
+</div>
+```
+
+✅ **CORRETO** - Usar Dialog modal
+```tsx
+import { AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+
+interface ErrorAlertProps {
+  error: string | null
+  onDismiss: () => void
+}
+
+export default function ErrorAlert({ error, onDismiss }: ErrorAlertProps) {
+  return (
+    <Dialog open={!!error} onOpenChange={(open) => !open && onDismiss()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-red-500" />
+            Erro
+          </DialogTitle>
+          <DialogDescription>
+            {error}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={onDismiss} className="bg-primary hover:bg-primary/90 text-white">
+            Fechar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+```
+
+### **Regras do ErrorAlert**
+- ✅ Usar Dialog modal centralizado
+- ✅ Ícone AlertCircle vermelho no título
+- ✅ Botão "Fechar" em laranja (primary)
+- ✅ Mensagem de erro como descrição
+- ✅ Fecha ao clicar fora ou no botão
+- ❌ **NUNCA** usar toast flutuante
+- ❌ **NUNCA** usar alert fixed
+
+---
+
+## 🚫 **8. O que NÃO fazer**
+
+### **Efeitos Visuais**
+- ❌ Hover effects em cards estatísticos
+- ❌ Sombras (shadows)
+- ❌ Glows (ring, drop-shadow)
+- ❌ Gradientes (bg-gradient-to-*)
+- ❌ Animações de transição em cards estáticos
+
+### **Cores**
+- ❌ Usar laranja em headers de tabela
+- ❌ Usar cores variadas para diferenciar cards
+- ❌ Usar fundos coloridos em ícones
+
+### **Textos**
+- ❌ Deixar "Ações" em uppercase (deve ser "Ações")
+- ❌ Alinhar títulos à esquerda (deve ser centralizado)
+- ❌ Usar texto laranja no header (deve ser branco)
+
+### **Confirmações**
+- ❌ Usar `window.confirm()`
+- ❌ Usar `window.alert()`
+
+---
+
+## ✅ **9. Checklist de Implementação**
+
+### **Cards Estatísticos**
+- [ ] Fundo preto com borda cinza
+- [ ] Ícones laranjas (h-6 w-6) sem fundo
+- [ ] Padding `p-2 pl-4`
+- [ ] Valor branco bold, label cinza
+- [ ] Sem hover effects
+
+### **Header da Tabela**
+- [ ] Fundo preto
+- [ ] Texto branco centralizado
+- [ ] Uppercase em todos (exceto "Ações")
+- [ ] Botões de ordenação brancos
+
+### **Espaçamentos**
+- [ ] Container: `px-2.5 py-2.5`
+- [ ] Margins: `mb-4` (não mb-6 ou mb-8)
+- [ ] Gap: `gap-4`
+
+### **Botões**
+- [ ] Buscar: fundo preto, texto branco
+- [ ] Sem gradientes ou cores variadas
+
+### **Confirmações**
+- [ ] Usar AlertDialog do shadcn/ui
+- [ ] NÃO usar `window.confirm()`
+- [ ] NÃO usar `window.alert()`
+- [ ] Botão cancelar em cinza
+- [ ] Botão confirmar em laranja (primary)
+
+### **Exibição de Erros**
+- [ ] Usar Dialog modal (não toast)
+- [ ] Ícone AlertCircle vermelho
+- [ ] Botão "Fechar" em laranja (primary)
+- [ ] Dialog centralizado
+- [ ] NÃO usar toast flutuante
+
+---
+
+## 📝 **10. Exemplo Completo de Card Estatístico**
+
+```tsx
+{/* Card de exemplo */}
+<Card className="bg-black border-gray-800">
+  <CardContent className="p-2 pl-4">
+    <div className="flex items-center gap-3">
+      <ShoppingCart className="h-6 w-6 text-primary" />
+      <div className="flex-1">
+        <p className="text-sm font-bold text-white">150</p>
+        <p className="text-xs text-gray-400">Total de Pedidos</p>
+      </div>
+    </div>
+  </CardContent>
+</Card>
+```
+
+---
+
+## 📝 **11. Exemplo Completo de Header de Tabela**
+
+```tsx
+<TableHeader>
+  <TableRow className="bg-black hover:bg-black border-b border-gray-800">
+    <TableHead className="text-white font-bold text-xs tracking-wider h-12 px-4 text-center uppercase">
+      Pedido
+    </TableHead>
+    <TableHead className="text-white font-bold text-xs tracking-wider h-12 px-4 text-center uppercase">
+      Cliente
+    </TableHead>
+    <TableHead className="text-white font-bold text-xs tracking-wider h-12 px-4 text-center">
+      Ações
+    </TableHead>
+  </TableRow>
+</TableHeader>
+```
+
+---
+
+## 🎯 **12. Quando Usar Este Padrão**
+
+Use este padrão quando o usuário solicitar:
+- "Seguir o padrão de tabelas"
+- "Usar o layout da página de pedidos"
+- "Aplicar Padrão Tabelas"
+- "Seguir o design do admin/orders"
+
+### **Páginas que devem usar este padrão:**
+- `/admin/orders` ✅ (referência)
+- `/admin/customers` (quando solicitado)
+- `/admin/products` (quando solicitado)
+- `/admin/sellers` (quando solicitado)
+- `/admin/categories`
+- `/admin/characteristics/colors`
+- Qualquer página admin com tabelas de dados
+
+---
+
+**🔧 Última atualização**: Outubro 2025  
+**📌 Status**: Padrão oficial para tabelas administrativas

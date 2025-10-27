@@ -1,0 +1,671 @@
+﻿'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useAuth } from '@/contexts/AuthContext'
+import { useCart } from '@/contexts/CartContext'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { 
+  ShoppingCart, 
+  User, 
+  LogOut, 
+  Package,
+  Settings,
+  Menu,
+  X,
+  Search,
+  ChevronDown
+} from 'lucide-react'
+import CartDrawer from './CartDrawer'
+import LoginModal from './LoginModal'
+import RegisterModal from './RegisterModal'
+
+interface Category {
+  id: number
+  name: string
+  slug: string
+  productCount: number
+}
+
+interface Brand {
+  id: number
+  name: string
+  categories: Category[]
+}
+
+interface AllCategory {
+  id: number
+  name: string
+  slug: string
+  productCount: number
+  brandName?: string
+}
+
+export default function Header() {
+  const { user, isAuthenticated, logout } = useAuth()
+  const { totalItems } = useCart()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false)
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false)
+  const [storeName, setStoreName] = useState('B2B Tropical')
+  const [logoUrl, setLogoUrl] = useState('')
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [allCategories, setAllCategories] = useState<AllCategory[]>([])
+  const [openSubmenu, setOpenSubmenu] = useState<number | string | null>(null)
+  const [closeTimeout, setCloseTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Set mounted state
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Buscar configuraÃ§Ãµes da loja
+  useEffect(() => {
+    const fetchStoreSettings = async () => {
+      try {
+        const response = await fetch('/api/settings/store')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.storeName) setStoreName(data.storeName)
+          if (data.logoUrl) setLogoUrl(data.logoUrl)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar configuraÃ§Ãµes da loja:', error)
+      }
+    }
+    fetchStoreSettings()
+  }, [])
+
+  // Buscar marcas com suas categorias
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const response = await fetch('/api/brands-with-categories')
+        if (response.ok) {
+          const data = await response.json()
+          setBrands(data)
+          
+          // Extrair todas as categorias de todas as marcas
+          const allCats: AllCategory[] = []
+          data.forEach((brand: Brand) => {
+            brand.categories.forEach((cat) => {
+              allCats.push({
+                ...cat,
+                brandName: brand.name
+              })
+            })
+          })
+          setAllCategories(allCats)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar marcas:', error)
+      }
+    }
+    fetchBrands()
+  }, [])
+
+  // Cleanup do timeout quando o componente desmontar
+  useEffect(() => {
+    return () => {
+      if (closeTimeout) {
+        clearTimeout(closeTimeout)
+      }
+    }
+  }, [closeTimeout])
+
+  // Detectar scroll para fixar o header
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY
+      setIsScrolled(scrollTop > 100) // Fixa o header apÃ³s 100px de scroll
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Aplicar classe ao body quando o header estiver fixo
+  useEffect(() => {
+    if (isScrolled) {
+      document.body.classList.add('header-fixed')
+    } else {
+      document.body.classList.remove('header-fixed')
+    }
+
+    return () => {
+      document.body.classList.remove('header-fixed')
+    }
+  }, [isScrolled])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      window.location.href = `/catalog?search=${encodeURIComponent(searchQuery)}`
+      setShowSearch(false)
+    }
+  }
+
+  return (
+    <header className="relative" style={{ zIndex: 1000 }}>
+      {/* Main Header */}
+      <div className="bg-gradient-to-r from-gray-900 via-black to-gray-900 border-b border-gray-800" style={{ minHeight: '80px' }}>
+        <div className="max-w-[1600px] mx-auto px-4 lg:px-6">
+          <div className="flex items-center justify-between h-20">
+          {/* Logo */}
+          <Link href="/" className="flex items-center group flex-shrink-0 hover:opacity-90 transition-opacity">
+            {logoUrl ? (
+              <div className="relative w-24 h-14 group-hover:scale-105 transition-transform duration-300">
+                <Image
+                  src={logoUrl}
+                  alt={storeName || 'Logo'}
+                  fill
+                  sizes="96px"
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            ) : (
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-orange-400 bg-clip-text text-transparent">
+                {storeName}
+              </span>
+            )}
+          </Link>
+
+          {/* Search Bar - Always Visible */}
+          <div className="hidden md:flex flex-1 max-w-2xl mx-6 lg:mx-10">
+            <form onSubmit={handleSearch} className="w-full group">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="O que vocÃª estÃ¡ procurando?"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-20 py-2.5 bg-white/95 border-2 border-transparent rounded-lg text-gray-900 text-sm placeholder-gray-500 focus:outline-none focus:border-primary focus:bg-white transition-all duration-300"
+                />
+                <button
+                  type="submit"
+                  className="absolute inset-y-0 right-0 pr-1.5 flex items-center"
+                >
+                  <span className="bg-primary hover:bg-primary/90 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-300 hover:shadow-md hover:shadow-primary/30">
+                    Buscar
+                  </span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center space-x-2 lg:space-x-3 flex-shrink-0">
+            {/* Search Button - Mobile Only */}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="md:hidden text-white hover:bg-white/10 hover:text-primary transition-all"
+              onClick={() => setShowSearch(!showSearch)}
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+
+            {/* Meus Pedidos - Visible when authenticated */}
+            {isAuthenticated && (
+              <Link href="/orders">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hidden lg:flex items-center gap-2 text-white hover:bg-white/10 hover:text-primary transition-all duration-200 hover:scale-105"
+                >
+                  <Package className="h-5 w-5" />
+                  <span className="hidden xl:inline">Meus Pedidos</span>
+                </Button>
+              </Link>
+            )}
+
+            {/* Cart */}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="relative text-white hover:bg-white/10 hover:text-primary transition-all duration-200 hover:scale-105"
+              onClick={() => setIsCartDrawerOpen(true)}
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-primary text-white rounded-full animate-pulse">
+                  {totalItems}
+                </span>
+              )}
+            </Button>
+
+            {/* Auth */}
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center gap-2 text-white hover:bg-white/10 hover:text-primary transition-all duration-200 hover:scale-105">
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline">{user?.name}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 z-[9999]">
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium">{user?.name}</p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center">
+                      <User className="mr-2 h-4 w-4" />
+                      Perfil
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/orders" className="flex items-center">
+                      <Package className="mr-2 h-4 w-4" />
+                      Meus Pedidos
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="flex items-center">
+                      <Settings className="mr-2 h-4 w-4" />
+                      ConfiguraÃ§Ãµes
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="hidden sm:flex items-center space-x-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-white hover:bg-white/10 hover:text-primary font-medium transition-all border border-transparent hover:border-primary/30"
+                  onClick={() => setIsLoginModalOpen(true)}
+                >
+                  Entrar
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="bg-gradient-to-r from-primary to-orange-500 text-white hover:from-primary/90 hover:to-orange-500/90 font-medium px-6 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-105"
+                  onClick={() => setIsRegisterModalOpen(true)}
+                >
+                  Cadastrar
+                </Button>
+              </div>
+            )}
+
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden text-white hover:bg-white/10"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Search Bar Mobile */}
+        {showSearch && (
+          <div className="md:hidden bg-gradient-to-r from-gray-900 via-black to-gray-900 pb-4 animate-in slide-in-from-top duration-300 border-t border-white/10">
+            <div className="max-w-[1600px] mx-auto px-4">
+              <form onSubmit={handleSearch} className="pt-4 group">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="O que vocÃª estÃ¡ procurando?"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-24 py-3.5 bg-white/95 border-2 border-transparent rounded-xl text-gray-900 text-sm placeholder-gray-500 focus:outline-none focus:border-primary focus:bg-white focus:shadow-lg focus:shadow-primary/20 transition-all duration-300"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    className="absolute inset-y-0 right-0 pr-2 flex items-center"
+                  >
+                    <span className="bg-primary hover:bg-primary/90 active:scale-95 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 shadow-md shadow-primary/30">
+                      Buscar
+                    </span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Header - Navigation (Marcas com Submenus) */}
+      <div className={`hidden md:block bg-gray-900 border-b border-gray-800 shadow-md ${isScrolled ? 'fixed top-0 left-0 right-0 z-50' : 'sticky top-0 z-50'}`}>
+        <div className="max-w-[1600px] mx-auto px-4 lg:px-6">
+          <div className={`flex items-center ${isScrolled ? 'justify-between' : 'justify-center'} w-full`}>
+            {/* Logo - aparece quando fixo */}
+            {isScrolled && (
+              <Link href="/" className="flex items-center group flex-shrink-0 hover:opacity-90 transition-opacity">
+                {logoUrl ? (
+                  <div className="relative w-16 h-10 group-hover:scale-105 transition-transform duration-300">
+                    <Image
+                      src={logoUrl}
+                      alt={storeName || 'Logo'}
+                      fill
+                      sizes="64px"
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
+                ) : (
+                  <span className="text-lg font-bold bg-gradient-to-r from-primary to-orange-400 bg-clip-text text-transparent">
+                    {storeName}
+                  </span>
+                )}
+              </Link>
+            )}
+            
+            <nav className={`flex items-center h-12 ${isScrolled ? 'flex-1 justify-between' : 'justify-between'} flex-wrap w-full`}>
+            {/* Container para itens de navegaÃ§Ã£o */}
+            <div className="flex items-center justify-evenly w-full">
+            {/* Todas as Categorias com Submenu */}
+            <div
+              className="relative group"
+              onMouseEnter={() => {
+                if (closeTimeout) {
+                  clearTimeout(closeTimeout)
+                  setCloseTimeout(null)
+                }
+                setOpenSubmenu('all-categories')
+              }}
+              onMouseLeave={() => {
+                const timeout = setTimeout(() => {
+                  setOpenSubmenu(null)
+                }, 200)
+                setCloseTimeout(timeout)
+              }}
+            >
+              <Link
+                href="/catalog"
+                className={`text-white hover:text-primary font-medium text-sm transition-all duration-300 inline-flex items-center gap-1.5 py-2 px-4 rounded-lg hover:bg-white/5 whitespace-nowrap ${
+                  openSubmenu === 'all-categories' ? 'text-primary bg-white/5' : ''
+                }`}
+                style={{ 
+                  padding: '8px 12px'
+                }}
+              >
+                Todas as Categorias
+                <ChevronDown 
+                  className={`w-3.5 h-3.5 transition-transform duration-300 ${openSubmenu === 'all-categories' ? 'rotate-180' : ''}`} 
+                />
+              </Link>
+              
+              {/* Dropdown de Todas as Categorias */}
+              {openSubmenu === 'all-categories' && allCategories.length > 0 && (
+                <div className="absolute top-full left-0 pt-2 z-50">
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 min-w-80">
+                    <div className="py-2">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          Todas as Categorias
+                        </h4>
+                      </div>
+                      <div className="py-1 max-h-96 overflow-y-auto custom-scrollbar">
+                        {allCategories.map((category) => (
+                          <Link
+                            key={`${category.id}-${category.brandName}`}
+                            href={`/category/${category.slug}`}
+                            className="group flex items-center justify-between px-4 py-2.5 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent transition-all duration-200 border-l-2 border-transparent hover:border-primary"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-gray-900 group-hover:text-primary transition-colors">
+                                {category.name}
+                              </span>
+                              {category.brandName && (
+                                <span className="text-xs text-gray-400">
+                                  {category.brandName}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-500 group-hover:text-primary transition-colors">
+                              ({category.productCount})
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {brands.length > 0 && (
+              <div className="h-6 w-px bg-gray-700"></div>
+            )}
+
+            {/* Marcas com Submenus de Categorias */}
+            {brands.map((brand) => (
+              <div
+                key={brand.id}
+                className="relative group"
+                onMouseEnter={() => {
+                  if (closeTimeout) {
+                    clearTimeout(closeTimeout)
+                    setCloseTimeout(null)
+                  }
+                  setOpenSubmenu(brand.id)
+                }}
+                onMouseLeave={() => {
+                  const timeout = setTimeout(() => {
+                    setOpenSubmenu(null)
+                  }, 200)
+                  setCloseTimeout(timeout)
+                }}
+              >
+                <Link
+                  href={`/catalog?brand=${brand.slug}`}
+                  className={`text-white hover:text-primary font-medium text-sm transition-all duration-300 inline-flex items-center gap-1.5 py-2 px-4 rounded-lg hover:bg-white/5 whitespace-nowrap ${
+                    openSubmenu === brand.id ? 'text-primary bg-white/5' : ''
+                  }`}
+                  style={{ 
+                    padding: '8px 12px'
+                  }}
+                >
+                  {brand.name}
+                  {brand.categories.length > 0 && (
+                    <ChevronDown 
+                      className={`w-3.5 h-3.5 transition-transform duration-300 ${openSubmenu === brand.id ? 'rotate-180' : ''}`} 
+                    />
+                  )}
+                </Link>
+                
+                {/* Dropdown de Categorias */}
+                {brand.categories.length > 0 && openSubmenu === brand.id && (
+                  <div className="absolute top-full left-0 pt-2 z-50">
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 min-w-64">
+                      <div className="py-2">
+                        <div className="px-4 py-2 border-b border-gray-100">
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            Categorias de {brand.name}
+                          </h4>
+                        </div>
+                        <div className="py-1 max-h-96 overflow-y-auto custom-scrollbar">
+                          {brand.categories.map((category) => (
+                            <Link
+                              key={category.id}
+                              href={`/catalog?brand=${brand.slug}&category=${category.slug}`}
+                              className="group flex items-center justify-between px-4 py-2.5 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent transition-all duration-200 border-l-2 border-transparent hover:border-primary"
+                            >
+                              <span className="text-sm font-medium text-gray-900 group-hover:text-primary transition-colors">
+                                {category.name}
+                              </span>
+                              <span className="text-xs text-gray-500 group-hover:text-primary transition-colors">
+                                ({category.productCount})
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            </div>
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-gray-900 border-t border-primary/20 animate-in slide-in-from-top duration-300">
+          <div className="px-4 py-4 max-h-[60vh] overflow-y-auto">
+            <nav className="space-y-2">
+              {/* Marcas com Categorias */}
+              {brands.map((brand, index) => (
+                <div 
+                  key={brand.id} 
+                  className="animate-in slide-in-from-left duration-300"
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
+                  <Link
+                    href={`/catalog?brand=${brand.slug}`}
+                    className="block text-white hover:text-primary font-semibold text-sm transition-all duration-200 py-2 px-3 rounded hover:bg-primary/10"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>{brand.name}</span>
+                      {brand.categories.length > 0 && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                          {brand.categories.length}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                  
+                  {/* Categorias da Marca */}
+                  {brand.categories.length > 0 && (
+                    <div className="ml-3 space-y-1">
+                      {brand.categories.map((category) => (
+                        <Link
+                          key={category.id}
+                          href={`/catalog?brand=${brand.slug}&category=${category.slug}`}
+                          className="block text-gray-400 hover:text-white text-xs py-1 px-2 rounded hover:bg-primary/10 transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {category.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Todas as Categorias */}
+              {allCategories.length > 0 && (
+                <div className="border-t border-primary/20 my-3">
+                  <h3 className="text-xs font-semibold text-white px-3 py-2">Todas as Categorias</h3>
+                  <div className="space-y-1">
+                    {allCategories.map((category) => (
+                      <Link
+                        key={category.id}
+                        href={`/catalog?category=${category.slug}`}
+                        className="block text-gray-400 hover:text-white text-xs py-1 px-3 rounded hover:bg-primary/10 transition-all duration-200"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {category.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pedidos (se autenticado) */}
+              {isAuthenticated && (
+                <div className="border-t border-primary/20 my-3">
+                  <Link 
+                    href="/orders" 
+                    className="block text-white hover:text-primary font-semibold text-sm transition-all duration-200 flex items-center space-x-2 py-2 px-3 rounded hover:bg-primary/10"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Package className="h-4 w-4" />
+                    <span>Meus Pedidos</span>
+                  </Link>
+                </div>
+              )}
+
+              {/* Auth Section */}
+              {!isAuthenticated && (
+                <div className="border-t border-primary/20 pt-3 space-y-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="w-full justify-center text-white border-white/20 hover:bg-white/10 hover:text-primary hover:border-primary text-sm transition-all"
+                    onClick={() => {
+                      setIsLoginModalOpen(true)
+                      setIsMobileMenuOpen(false)
+                    }}
+                  >
+                    Entrar
+                  </Button>
+                  <Button 
+                    size="sm"
+                    className="w-full bg-gradient-to-r from-primary to-orange-500 text-white hover:from-primary/90 hover:to-orange-500/90 text-sm font-semibold shadow-lg shadow-primary/30"
+                    onClick={() => {
+                      setIsRegisterModalOpen(true)
+                      setIsMobileMenuOpen(false)
+                    }}
+                  >
+                    Cadastrar
+                  </Button>
+                </div>
+              )}
+            </nav>
+          </div>
+        </div>
+      )}
+
+      {/* Cart Drawer */}
+      <CartDrawer 
+        isOpen={isCartDrawerOpen} 
+        onClose={() => setIsCartDrawerOpen(false)} 
+      />
+
+      {/* Auth Modals */}
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)}
+        onSwitchToRegister={() => {
+          setIsLoginModalOpen(false)
+          setIsRegisterModalOpen(true)
+        }}
+      />
+      
+      <RegisterModal 
+        isOpen={isRegisterModalOpen} 
+        onClose={() => setIsRegisterModalOpen(false)}
+        onSwitchToLogin={() => {
+          setIsRegisterModalOpen(false)
+          setIsLoginModalOpen(true)
+        }}
+      />
+    </header>
+  )
+}
