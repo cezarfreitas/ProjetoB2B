@@ -113,27 +113,50 @@ export async function POST(request: NextRequest) {
         itemId: existingItem[0].id 
       })
     } else {
-      // Inserir novo item
-      const result = await executeQuery(
-        `INSERT INTO cart (customer_id, status, cart_session_id, product_id, variant_id, quantity, price, product_name, product_image, variant_info)
-         VALUES (?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          decoded.userId,
-          sessionId,
-          productId,
-          variantId || null,
-          quantity,
-          price,
-          name,
-          image || null,
-          variant ? JSON.stringify(variant) : null
-        ]
+      // Verificar se existe item arquivado com os mesmos dados para reativar
+      const archivedItem = await executeQuery(
+        `SELECT id, quantity FROM cart 
+         WHERE customer_id = ? AND product_id = ? AND status = 'archived'
+         AND (variant_id = ? OR (variant_id IS NULL AND ? IS NULL))
+         ORDER BY archived_at DESC LIMIT 1`,
+        [decoded.userId, productId, variantId || null, variantId || null]
       )
 
-      return NextResponse.json({ 
-        message: 'Item adicionado ao carrinho',
-        itemId: result.insertId 
-      }, { status: 201 })
+      if (Array.isArray(archivedItem) && archivedItem.length > 0) {
+        // Reativar item arquivado
+        const newQuantity = quantity
+        await executeQuery(
+          `UPDATE cart SET status = 'active', quantity = ?, price = ?, updated_at = NOW(), archived_at = NULL WHERE id = ?`,
+          [newQuantity, price, archivedItem[0].id]
+        )
+
+        return NextResponse.json({ 
+          message: 'Item reativado no carrinho',
+          itemId: archivedItem[0].id 
+        })
+      } else {
+        // Inserir novo item
+        const result = await executeQuery(
+          `INSERT INTO cart (customer_id, status, cart_session_id, product_id, variant_id, quantity, price, product_name, product_image, variant_info)
+           VALUES (?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            decoded.userId,
+            sessionId,
+            productId,
+            variantId || null,
+            quantity,
+            price,
+            name,
+            image || null,
+            variant ? JSON.stringify(variant) : null
+          ]
+        )
+
+        return NextResponse.json({ 
+          message: 'Item adicionado ao carrinho',
+          itemId: result.insertId 
+        }, { status: 201 })
+      }
     }
 
   } catch (error) {
