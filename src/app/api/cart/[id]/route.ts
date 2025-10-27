@@ -33,7 +33,7 @@ export async function PUT(
     // Atualizar quantidade
     await executeQuery(
       `UPDATE cart SET quantity = ?, updated_at = NOW() 
-       WHERE id = ? AND customer_id = ?`,
+       WHERE id = ? AND customer_id = ? AND status = 'active'`,
       [quantity, id, decoded.userId]
     )
 
@@ -67,10 +67,24 @@ export async function DELETE(
     const token = authHeader.substring(7)
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any
 
-    // Deletar item do carrinho
+    // Verificar se o item existe e pertence ao usuário
+    const existingItem = await executeQuery(
+      `SELECT id FROM cart WHERE id = ? AND customer_id = ? AND status = 'active'`,
+      [id, decoded.userId]
+    )
+
+    if (!Array.isArray(existingItem) || existingItem.length === 0) {
+      return NextResponse.json(
+        { error: 'Item não encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Arquivar item do carrinho ao invés de deletar
     await executeQuery(
-      `DELETE FROM cart_items 
-       WHERE id = ? AND userId = ?`,
+      `UPDATE cart 
+       SET status = 'archived', archived_at = NOW() 
+       WHERE id = ? AND customer_id = ? AND status = 'active'`,
       [id, decoded.userId]
     )
 
