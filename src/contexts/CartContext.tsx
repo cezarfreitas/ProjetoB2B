@@ -38,25 +38,45 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [items, setItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(false)
-  const [initialized, setInitialized] = useState(false)
+  const [lastUserId, setLastUserId] = useState<string | null>(null)
 
-  // Carregar carrinho do banco quando usuário logar
+  // Carregar carrinho do banco quando usuário logar ou trocar de usuário
   useEffect(() => {
-    if (user && user.role === 'customer' && !initialized) {
-      loadCartFromDatabase()
-      setInitialized(true)
-    } else if (!user && initialized) {
+    if (user && user.role === 'customer') {
+      // Se é um usuário diferente ou ainda não carregou, carregar carrinho
+      if (lastUserId !== user.id) {
+        console.log('🛒 Carregando carrinho para usuário:', user.id)
+        loadCartFromDatabase()
+        setLastUserId(user.id)
+      }
+    } else if (!user) {
       // Quando usuário deslogar, limpar carrinho
+      console.log('🧹 Limpando carrinho - usuário deslogado')
       setItems([])
-      setInitialized(false)
+      setLastUserId(null)
     }
-  }, [user, initialized])
+  }, [user, lastUserId])
+
+  // Salvar carrinho no localStorage quando mudar
+  useEffect(() => {
+    if (items.length > 0 && (!user || user.role !== 'customer')) {
+      localStorage.setItem('cart_items', JSON.stringify(items))
+      console.log('💾 Carrinho salvo no localStorage')
+    }
+  }, [items, user])
 
   const loadCartFromDatabase = async () => {
     try {
       setLoading(true)
       const token = localStorage.getItem('auth_token')
-      if (!token) return
+      if (!token) {
+        // Tentar carregar carrinho local se não houver token
+        const localCart = localStorage.getItem('cart_items')
+        if (localCart) {
+          setItems(JSON.parse(localCart))
+        }
+        return
+      }
 
       const response = await fetch('/api/cart', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -64,10 +84,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json()
+        console.log('📦 Carrinho carregado do banco:', data.length, 'itens')
         setItems(data)
+        // Limpar carrinho local após sincronizar
+        localStorage.removeItem('cart_items')
+      } else {
+        // Se falhar, tentar carregar carrinho local
+        const localCart = localStorage.getItem('cart_items')
+        if (localCart) {
+          setItems(JSON.parse(localCart))
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar carrinho:', error)
+      // Tentar carregar carrinho local em caso de erro
+      const localCart = localStorage.getItem('cart_items')
+      if (localCart) {
+        setItems(JSON.parse(localCart))
+      }
     } finally {
       setLoading(false)
     }
